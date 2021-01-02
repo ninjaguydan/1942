@@ -7,22 +7,40 @@
 		background-color:black;
 	}
 	#container{
-		background: url('background.jpg');
+		background: url('img/space.jpg');
 		width:1000px;
 		height:550px;
 	}
 	#hero{
+		background: url('img/player.png');
+		background-position: center;
+		background-size: cover;
+		width:35px;
+		height:35px;
+		position:absolute;
+		z-index: 1;
+	}
+	#splosion{
 		background: url('1942.gif');
-		background-position: -85px -180px;
+		background-position: -110px -31px;
 		width:28px;
 		height:28px;
 		position:absolute;
+		z-index: 1;
 	}
 	.enemy1{
 		background: url('1942.gif');
 		background-position: -30px -10px;
 		width:28px;
 		height:28px;
+		position:absolute;
+	}
+	.alien{
+		background: url('img/aliens.png');
+		background-position: center;
+		background-size: cover;
+		width:40px;
+		height:40px;
 		position:absolute;
 	}
 	.bullet{
@@ -46,25 +64,190 @@
 </head>
 <body>
 	<div id='container'>
-		<div id='hero' style='top:300px; left:300px;'></div>
-		<div id='enemies'>
-			<div class='enemy1' style='top:100px; left:100px;'></div>
-			<div class='enemy1' style='top:100px; left:200px;'></div>
-			<div class='enemy1' style='top:100px; left:300px;'></div>
-			<div class='enemy1' style='top:100px; left:400px;'></div>
-		</div>
-		<div id='bullets'>
-			<div class='bullet' style='top:150px; left:200px;'></div>
-			<div class='bullet' style='top:250px; left:200px;'></div>
-			<div class='bullet' style='top:350px; left:200px;'></div>
-			<div class='bullet' style='top:450px; left:200px;'></div>
-		</div>	
+		<div id='hero'></div>
+		<div id='enemies'></div>
+		<div id='bullets'></div>
 	</div>
 
-	<div id='score'>100</div>
+	<div id='score'>0</div>
 
 
 <script>
+	// 1. Display the hero
+	var hero = {
+		x: 300,
+		y: 500
+	}
+
+	function displayHero() {
+		document.getElementById('hero').style.top = hero.y + 'px';
+		document.getElementById('hero').style.left = hero.x + 'px';
+	}
+	displayHero();
+
+	// 2. Make the hero move
+	document.onkeydown = function(a) {
+		if (a.keyCode == 37) { //move left
+			hero.x -= 10;
+		}		
+		if (a.keyCode == 39) { //move right
+			hero.x += 10;
+		}
+		if (a.keyCode == 32) { //spacebar to shoot
+			bullets.push({x: (hero.x + 5), y: (hero.y + 2)});
+			displayBullet();
+		}
+		displayHero();
+	}
+
+	// 3. Display enemies
+	var enemies = [
+		{x: 50, y: 10},
+		{x: 250, y: 175},
+		{x: 650, y: 80},
+		{x: 450, y: 300}
+	];
+
+	var aliens = [
+		{x: 150, y: 45},
+		{x: 400, y: 287},
+		{x: 700, y: 105}
+	];
+
+	function displayEnemies() {
+		var output = '';
+		for (let i = 0; i < enemies.length; i++) {
+			output += "<div class='enemy1' style='top:" + enemies[i].y + "px; left:" + enemies[i].x + "px;'></div>\n"
+		}
+		for (let i = 0; i < aliens.length; i++) {
+			output += "<div class='alien' style='top:" + aliens[i].y + "px; left:" + aliens[i].x + "px;'></div>\n"
+		}
+		document.getElementById('enemies').innerHTML = output;
+	}
+	displayEnemies();
+
+	// 4. Make enemies move
+	function moveEnemies(){
+		for (let i = 0; i < enemies.length; i++) {
+			enemies[i].y += 5;
+			if (enemies[i].y > 530) {
+				enemies[i].y = -20;
+				enemies[i].x = Math.random()*600;
+			}
+		}
+		for (let i = 0; i < aliens.length; i++) {
+			aliens[i].y += 3;
+			if (aliens[i].y > 530) {
+				aliens[i].y = -20;
+				aliens[i].x = Math.random()*600;
+			}
+		}
+	}
+
+	// 5. MAke hero shoot with space bar
+	var bullets = [];
+
+	function displayBullet(){
+		var output = '';
+		for (let i = 0; i < bullets.length; i++) {
+			output += "<div class='bullet' style='top:" + bullets[i].y + "px; left:" + bullets[i].x + "px;'></div>\n"
+		}
+		document.getElementById('bullets').innerHTML = output;
+	}
+	function moveBullet(){
+		for (let i = 0; i < bullets.length; i++) {
+			bullets[i].y -= 20;
+			if (bullets[i].y < 0) {
+				bullets.shift();
+				// console.log(bullets);
+			}
+		}
+	}
+
+	// 6. Detect Collision
+	var score = 0;
+
+	function displayScore() {
+        document.getElementById('score').innerHTML = score;
+	}
+	
+	var splosions = [];
+
+	function displayExplosion() {
+		var output = ''
+		for (let i = 0; i < splosions.length; i++) {
+			output += "<div id='splosion' style='top:" + splosions[i].y + "px; left:" + splosions[i].x + "px;'></div>"
+		}
+		document.getElementById('enemies').innerHTML = output;
+	}
+
+	var audio = new Audio('/8-Bit-SFX_Explosion-1.mp3');
+
+	function detectCollision() {
+		for (let i = 0; i < bullets.length; i++){
+			for (let j = 0; j < enemies.length; j++) {
+				if (Math.abs(bullets[i].x - enemies[j].x) < 20 &&
+					Math.abs(bullets[i].y - enemies[j].y) < 20) {
+						audio.play();
+						splosions.push({x: (enemies[j].x), y: (enemies[j].y)});
+						displayExplosion();
+						enemies[j].y = -20;
+						enemies[j].x = Math.random()*600;
+						score += 10;
+						splosions.shift();
+						console.log(splosions);
+						console.log('Bullet' + i + ' and enemy' + j + ' collided! +10!');
+				}
+			}
+			for (let k = 0; k < aliens.length; k++) {
+				if (Math.abs(bullets[i].x - aliens[k].x) < 20 &&
+					Math.abs(bullets[i].y - aliens[k].y) < 20) {
+						audio.play();
+						splosions.push({x: (aliens[k].x), y: (aliens[k].y)});
+						displayExplosion();
+						aliens[k].y = -30;
+						aliens[k].x = Math.random()*600;
+						score += 50;
+						splosions.shift();
+						console.log('Bullet' + i + ' and alien' + k + ' collided! +50!!');
+				}
+			}
+		}
+		for (let i = 0; i < enemies.length; i++) {
+			if (Math.abs(hero.x - enemies[i].x) < 20 && Math.abs(hero.y - enemies[i].y) < 20) {
+				console.log ('Enemy' + i + ' collided with Hero! -20');
+				score -= 20;
+				enemies[i].y = -20;
+				enemies[i].x = Math.random()*600;
+			}
+		}
+		for (let i = 0; i < aliens.length; i++) {
+			if (Math.abs(hero.x - aliens[i].x) < 20 && Math.abs(hero.y - aliens[i].y) < 20) {
+				console.log ('Alien' + i + ' collided with Hero! -25');
+				score -= 25;
+				aliens[i].y = -30;
+				aliens[i].x = Math.random()*600;
+			}
+		}
+	}
+ 
+
+	// Game Loop
+	function gameLoop(){
+		displayHero();
+		
+		displayEnemies();
+		moveEnemies();
+
+		displayBullet();
+		moveBullet();
+
+		// displayExplosion();
+		detectCollision();
+		displayScore();
+		setTimeout(gameLoop, 50);
+	}
+	gameLoop();
 
 </script>
 
